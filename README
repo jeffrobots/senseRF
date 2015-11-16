@@ -1,0 +1,29 @@
+README
+
+The following code has been adapted from the TI CCxxx drivers and the GitHub project LarsRF. Heavy modifcations have been made to the behavior and structure of the main program, but backend drivers have been left largely untouched.
+
+The code will work as follows:
+1) Initialize device and configure ports, interal timers, etc.
+1.5) Enter low power mode
+2) Wait for interrupt from timer
+3) Read temperature from ADC
+4) Transmit temperature data along with some other packet information
+5) Wait for acknowledgement from the receiver on the other side
+6) Re-enter low power mode
+6.5) If no acknowledgement is received, do nothing (for now)
+_____
+7) If sensor recieves a packet of data, confirm that it is valid.
+8) If data is valid, send acknowledgement.
+9) If data is not valid (I've not had this happen), do nothing.
+10) Enter low power mode after acknowledging data receipt.
+
+
+Installing:
+
+Code is written for Code Composer Studio and MSP430G2553 with a launchpad debugger target. The transciever used is a TI CC110 contained within the Anaren Boosterpack. If this module is used outside the boosterpack, pin mappings will need to be changed.
+
+All files included should be added to a project. If no changes are necessary, building and flashing the program to the msp430g2553 is all that is necessary. 
+
+Note: The user can test the program without waiting for the timer by pressing the user button to force a transmission
+
+Note: It may be necessary to press the reset button to begin function. 
