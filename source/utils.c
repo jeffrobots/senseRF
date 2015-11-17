@@ -98,8 +98,8 @@ int readTemp() {
 	int t=0;
 	__delay_cycles(1000);
 	ADC10CTL0 |= ENC + ADC10SC; // enable ADC Conversion
-	while(ADC10CTL & BUSY); // wait
+	while(ADC10CTL1 & BUSY); // wait
 	t = ADC10MEM;
-	ADC10CTL0 &= ~ENC ; disable conversion
+	ADC10CTL0 &= ~ENC;
 	return(int) ((t*27069L - 1816925L ) >>16); // convert and scale temperature reading and push to output
 }

@@ -38,13 +38,6 @@ char ackBuffer[ACKLEN] = {ACKLEN-1, 0x01, 0xFF, 0x00}; // acknowledgement messag
 char rxBuffer[MSGLEN];
 unsigned int i = 0;
 
-// Build packet
-/*ackBuffer[0] = 3;                        	// Packet length not including this bit
-ackBuffer[1] = 0x01;                     	// Packet address
-ackBuffer[2] = 0xFF;						// acknowledgement
-ackBuffer[3] = 0x00;						// termination*/
-
-
 void main (void)
 {
   WDTCTL = WDTPW + WDTHOLD;                 // Stop WDT
@@ -111,6 +104,7 @@ void main (void)
 			__bis_SR_register(LPM3_bits + GIE); // re-enter LPM3 + interrupts
   		  }
   		  else if (sendACK) {
+  			__delay_cycles(5000);					// force a slight delay between receive and ack
   			  RFSendPacket(ackBuffer, ACKLEN);
   			  sendACK = 0;
   			  __bis_SR_register(LPM3_bits + GIE);
@@ -155,15 +149,13 @@ __interrupt void PORT2_ISR()
   if(TI_CC_GDO0_PxIFG & TI_CC_GDO0_PIN)
   {
     char len=11;                            // Len of pkt to be RXed (only addr
-                                            // plus data; size byte not incl b/c
-                                            // stripped away within RX function)
+                                            // plus data; size byte not incl
     if (RFReceivePacket(rxBuffer,&len))
     {
         // Fetch packet from CCxxxx
         if (rxBuffer[1] != 0xFF)
         {
         	TI_CC_LED_PxOUT ^= rxBuffer[1];         // Toggle LEDs according to pkt data (if it is actually data)
-        	__delay_cycles(5000);					// force a slight delay between receive and ack (Remove this later as it should be instantaneous)
         	// Send ACK
 			sendACK = 1;
 
