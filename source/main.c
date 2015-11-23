@@ -21,6 +21,8 @@
 //#define interrupt(x) void __attribute__((interrupt (x)))
 #define ACKLEN 4
 #define MSGLEN 12
+#define TEMPINDEX 3
+#define TEMPDATASIZE 10
 
 
 #include "include.h"
@@ -36,78 +38,85 @@ volatile char sendACK;				// Flag to determine when to send ACK
 char txBuffer[MSGLEN];
 char ackBuffer[ACKLEN] = {ACKLEN-1, 0x01, 0xFF, 0x00}; // acknowledgement message - Do not change
 char rxBuffer[MSGLEN];
-unsigned int i = 0;
+
 
 void main (void)
 {
+	char tempData[TEMPDATASIZE] = {0}; // storage for temperature data
+	unsigned int i;
+	WDTCTL = WDTPW + WDTHOLD;                 // Stop WDT
 
-  WDTCTL = WDTPW + WDTHOLD;                 // Stop WDT
-  	  unsigned char tempF = 0;
-  	  unsigned char* p_tempF;
-  	  p_tempF = &tempF;
-	  // 5ms delay to compensate for time to startup between MSP430 and CC1100/2500
-	  __delay_cycles(5000);
+	// 5ms delay to compensate for time to startup between MSP430 and CC1100/2500
+	__delay_cycles(5000);
 
-	  uartInit();
+	uartInit();
+	initTemp();
 
-	  TI_CC_SPISetup();                         // Initialize SPI port
+	TI_CC_SPISetup();                         // Initialize SPI port
 
-	  TI_CC_PowerupResetCCxxxx();               // Reset CCxxxx
-	  writeRFSettings();                        // Write RF settings to config reg
-	  TI_CC_SPIWriteBurstReg(TI_CCxxx0_PATABLE, paTable, paTableLen);//Write PATABLE
+	TI_CC_PowerupResetCCxxxx();               // Reset CCxxxx
+	writeRFSettings();                        // Write RF settings to config reg
+	TI_CC_SPIWriteBurstReg(TI_CCxxx0_PATABLE, paTable, paTableLen);//Write PATABLE
 
-	  // Configure ports -- switch inputs, LEDs, GDO0 to RX packet info from CCxxxx
-	  TI_CC_SW_PxREN |= TI_CC_SW1;               // Enable Pull up resistor
-	  TI_CC_SW_PxOUT |= TI_CC_SW1;               // Enable pull up resistor
-	  TI_CC_SW_PxIES |= TI_CC_SW1;               // Int on falling edge
-	  TI_CC_SW_PxIFG &= ~(TI_CC_SW1);           // Clr flags
-	  TI_CC_SW_PxIE |= TI_CC_SW1;                // Activate interrupt enables
-	  TI_CC_LED_PxOUT &= ~(TI_CC_LED1); // Outputs = 0
-	  TI_CC_LED_PxDIR |= TI_CC_LED1;// LED Direction to Outputs
+	// Configure ports -- switch inputs, LEDs, GDO0 to RX packet info from CCxxxx
+	TI_CC_SW_PxREN |= TI_CC_SW1;               // Enable Pull up resistor
+	TI_CC_SW_PxOUT |= TI_CC_SW1;               // Enable pull up resistor
+	TI_CC_SW_PxIES |= TI_CC_SW1;               // Int on falling edge
+	TI_CC_SW_PxIFG &= ~(TI_CC_SW1);           // Clr flags
+	TI_CC_SW_PxIE |= TI_CC_SW1;                // Activate interrupt enables
+	TI_CC_LED_PxOUT &= ~(TI_CC_LED1); // Outputs = 0
+	TI_CC_LED_PxDIR |= TI_CC_LED1;// LED Direction to Outputs
 
-	  BCSCTL3 |= LFXT1S_2; 					// source ACKL from VLO (12KHz)
-	  TACCTL0 = CCIE;
-	  TACCR0 = 16400; // 1 second delay @ ACLK
-	  TACTL = TASSEL_1 + MC1;
+	BCSCTL3 |= LFXT1S_2; 					// source ACKL from VLO (12KHz)
+	//TACCTL0 = CCIE;
+	//TACCR0 = 16400; // 1 second delay @ ACLK
+	// TACTL = TASSEL_1 + MC1;
 
 
-	  TI_CC_GDO0_PxIES |= TI_CC_GDO0_PIN;       // Int on falling edge (end of pkt)
-	  TI_CC_GDO0_PxIFG &= ~TI_CC_GDO0_PIN;      // Clear flag
-	  TI_CC_GDO0_PxIE |= TI_CC_GDO0_PIN;        // Enable int on end of packet
+	TI_CC_GDO0_PxIES |= TI_CC_GDO0_PIN;       // Int on falling edge (end of pkt)
+	TI_CC_GDO0_PxIFG &= ~TI_CC_GDO0_PIN;      // Clear flag
+	TI_CC_GDO0_PxIE |= TI_CC_GDO0_PIN;        // Enable int on end of packet
 
-	  TI_CC_SPIStrobe(TI_CCxxx0_SRX);           // Initialize CCxxxx in RX mode.
-												// When a pkt is received, it will
-												// signal on GDO0 and wake CPU
+	TI_CC_SPIStrobe(TI_CCxxx0_SRX);           // Initialize CCxxxx in RX mode.
+											// When a pkt is received, it will
+                                            // signal on GDO0 and wake CPU
   // Build generic packet
-     txBuffer[0] = MSGLEN-1;                        // Packet length
-     txBuffer[1] = 0x01;                     // Packet address - If this is 0xFF, it's an ack and not data.
-     // Begin data
-     // ------
-     txBuffer[2] = TI_CC_LED1;				// data to toggle LED1.
-     txBuffer[3] = *p_tempF;
-     txBuffer[4] = 0x33;
-     txBuffer[5] = 0x34;
-     txBuffer[6] = 0x35;
-     txBuffer[7] = 0x36;
-     txBuffer[8] = 0x37;
-     txBuffer[9] = 0x38;
-     txBuffer[10] = 0x39;
-     // ------
-     // End Data
-     txBuffer[11] = 0x00;					// terimate
+    txBuffer[0] = MSGLEN-1;                        // Packet length
+	txBuffer[1] = 0x01;                     // Packet address - If this is 0xFF, it's an ack and not data.
+	// Begin data
+	// ------
+	txBuffer[2] = TI_CC_LED1;				// data to toggle LED1.
+	txBuffer[3] = 0x00;					// temperature data
+	txBuffer[4] = 0x33;
+	txBuffer[5] = 0x34;
+	txBuffer[6] = 0x35;
+	txBuffer[7] = 0x36;
+	txBuffer[8] = 0x37;
+	txBuffer[9] = 0x38;
+	txBuffer[10] = 0x39;
+	// ------
+	// End Data
+	txBuffer[11] = 0x00;					// terimate
 
-  __bis_SR_register(LPM3_bits + GIE);       // Enter LPM3, interrupts enabled
+  __bis_SR_register(LPM3_bits + GIE);       	// Enter LPM3, interrupts enabled
 
-  	  // Entry point from all ISRs
-  	  while(1) {
-  		  if (sendDataFlag || buttonPressed) { 				// Service data transmission
-  			tempF = readTemp();
+   	  while(1) {
+  		  if (sendDataFlag || buttonPressed) {	// Service data transmission
+  			txBuffer[TEMPINDEX] = readTemp();
+  			for (i=TEMPDATASIZE; i>1; i--) {
+  				tempData[i-1] = tempData[i-2];	// Cycle through and shift data through the buffer
+  			}
+  			tempData[0] = txBuffer[TEMPINDEX];	// Store new data in the first slot.
   			RFSendPacket(txBuffer, MSGLEN);
+  			__delay_cycles(5000);
+  			uart_printf("Temperature Sent: %i\r\n", txBuffer[TEMPINDEX]);
+  			__delay_cycles(5000);
   			buttonPressed = 0; //
-			sendDataFlag = 0; // clear associated flags
+			sendDataFlag = 0; 					// clear associated flags
 			__bis_SR_register(LPM3_bits + GIE); // re-enter LPM3 + interrupts
   		  }
   		  else if (sendACK) {
+
   			__delay_cycles(5000);					// force a slight delay between receive and ack
   			  RFSendPacket(ackBuffer, ACKLEN);
   			  sendACK = 0;
@@ -121,8 +130,8 @@ void main (void)
 #pragma vector=TIMER0_A0_VECTOR
 __interrupt void TIMERA0_ISR(void)
 {
-	_BIC_SR(LPM3_EXIT); // exit low power mode when we get an interrupt.
-	sendDataFlag = 1; // set flag to send new data
+	_BIC_SR(LPM3_EXIT); 		// exit low power mode when we get an interrupt.
+	sendDataFlag = 1; 			// set flag to send new data
 }
 
 // The ISR assumes the interrupt came from a pressed button
@@ -133,19 +142,15 @@ __interrupt void PORT1_ISR()
   // If Switch was pressed
   if(TI_CC_SW_PxIFG & TI_CC_SW1)
   {
-	_BIC_SR(LPM3_EXIT); // exit low power mode when we get an interrupt.
-    // Using printf isn't very efficient, although if you configure your compiler,
-    // http://www.43oh.com/forum/viewtopic.php?f=10&t=1732&hilit=tiny+printf
-    //uart_printf("TX PKT:%i\r\n", txBuffer[3]);// An example of what we want to show on serial
-    buttonPressed = 1;
-    //RFSendPacket(txBuffer, 12);              // Send value over RF
-    __delay_cycles(20000);                   // Switch debounce
+	_BIC_SR(LPM3_EXIT); 				// exit low power mode
+    buttonPressed = 1; 					// set flag for processing later on
+    __delay_cycles(50000);				// Switch debounce
+    TI_CC_SW_PxIFG &= ~(TI_CC_SW1);		// Clr flag that caused int and exit
   }
-  TI_CC_SW_PxIFG &= ~(TI_CC_SW1);           // Clr flag that caused int
+
 }
 
-// The ISR assumes the interrupt came from GDO0. GDO0 fires indicating that
-// CCxxxx received a packet
+// CC110L received a packet (Port 2 interrupted on GDO0)
 #pragma vector=PORT2_VECTOR
 __interrupt void PORT2_ISR()
 {
@@ -154,6 +159,7 @@ __interrupt void PORT2_ISR()
   {
     char len=11;                            // Len of pkt to be RXed (only addr
                                             // plus data; size byte not incl
+    _BIC_SR(LPM3_EXIT); 				// exit low power mode
     if (RFReceivePacket(rxBuffer,&len))
     {
         // Fetch packet from CCxxxx
@@ -162,9 +168,7 @@ __interrupt void PORT2_ISR()
         	TI_CC_LED_PxOUT ^= rxBuffer[1];         // Toggle LEDs according to pkt data (if it is actually data)
         	// Send ACK
 			sendACK = 1;
-			//RFSendPacket(ackBuffer, ACKLEN);              // Send value over RF
-			//uart_printf("RX PKT:%i\r\n", rxBuffer[2]);// An example of what we want to show on serial
-			//uart_printf("TX ACK\r\n"); // Similar to printf, but printf probably takes longer
+			uart_printf("Received Temperature: %i\r\n", rxBuffer[2]);// An example of what we want to show on serial
         }
         // ARQ would go here.
      }
