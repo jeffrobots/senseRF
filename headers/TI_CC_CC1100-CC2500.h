@@ -127,6 +127,7 @@
 #define TI_CCxxx0_PATABLE      0x3E
 #define TI_CCxxx0_TXFIFO       0x3F
 #define TI_CCxxx0_RXFIFO       0x3F
+#define TI_CC110_RSSI_STATUS	0xF4
 
 // Masks for appended status bytes
 #define TI_CCxxx0_LQI_RX       0x01        // Position of LQI byte

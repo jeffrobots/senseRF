@@ -103,3 +103,5 @@ char readTemp() {
 	ADC10CTL0 &= ~ENC;
 	return(char) ((t*27069L - 1816925L ) >>16); // convert and scale temperature reading and push to output
 }
+
+

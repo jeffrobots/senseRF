@@ -222,7 +222,7 @@ extern char paTableLen = 1;
 // Deviation = 0.000000
 // Return state:  Return to RX state upon leaving either TX or RX
 // Datarate = 250.000000 kbps
-// Modulation = (7) MSK
+// Modulation = GFSK
 // Manchester enable = (0) Manchester disabled
 // RF Frequency = 868.000000 MHz
 // Channel spacing = 199.951172 kHz
@@ -258,10 +258,10 @@ void writeRFSettings(void)
     TI_CC_SPIWriteReg(TI_CCxxx0_FREQ0,    0x76); // Freq control word, low byte.
     TI_CC_SPIWriteReg(TI_CCxxx0_MDMCFG4,  0x2D); // Modem configuration.
     TI_CC_SPIWriteReg(TI_CCxxx0_MDMCFG3,  0x3B); // Modem configuration.
-    TI_CC_SPIWriteReg(TI_CCxxx0_MDMCFG2,  0x73); // Modem configuration.
+    TI_CC_SPIWriteReg(TI_CCxxx0_MDMCFG2,  0x13); // Modem configuration.
     TI_CC_SPIWriteReg(TI_CCxxx0_MDMCFG1,  0x22); // Modem configuration.
     TI_CC_SPIWriteReg(TI_CCxxx0_MDMCFG0,  0xF8); // Modem configuration.
-    TI_CC_SPIWriteReg(TI_CCxxx0_DEVIATN,  0x00); // Modem dev (when FSK mod en)
+    TI_CC_SPIWriteReg(TI_CCxxx0_DEVIATN,  0x47); // Modem dev (when FSK mod en) (these are the default values - deviation of ~47kHz
     TI_CC_SPIWriteReg(TI_CCxxx0_MCSM1 ,   0x3F); //MainRadio Cntrl State Machine
     TI_CC_SPIWriteReg(TI_CCxxx0_MCSM0 ,   0x18); //MainRadio Cntrl State Machine
     TI_CC_SPIWriteReg(TI_CCxxx0_FOCCFG,   0x1D); // Freq Offset Compens. Config

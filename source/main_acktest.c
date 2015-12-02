@@ -129,7 +129,7 @@ __interrupt void PORT1_ISR()
     // Using printf isn't very efficient, although if you configure your compiler,
     // http://www.43oh.com/forum/viewtopic.php?f=10&t=1732&hilit=tiny+printf
 
-    //uart_printf("TX PKT:%i\r\n", txBuffer[3]);// An example of what we want to show on serial
+    uart_printf("TX PKT:%i\r\n", txBuffer[3]);// An example of what we want to show on serial
           
     RFSendPacket(txBuffer, 12);              // Send value over RF
     __delay_cycles(5000);                   // Switch debounce
@@ -158,8 +158,8 @@ __interrupt void PORT2_ISR()
         	// Send ACK
 			RFSendPacket(ackBuffer, ACKLEN);              // Send value over RF
 
-			//uart_printf("RX PKT:%i\r\n", rxBuffer[2]);// An example of what we want to show on serial
-			//uart_printf("TX ACK\r\n"); // Similar to printf, but printf probably takes longer
+			uart_printf("RX PKT:%i\r\n", rxBuffer[2]);// An example of what we want to show on serial
+			uart_printf("TX ACK\r\n"); // Similar to printf, but printf probably takes longer
         }
         // Handle ARQ here
      }

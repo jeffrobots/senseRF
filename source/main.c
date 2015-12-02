@@ -21,8 +21,10 @@
 //#define interrupt(x) void __attribute__((interrupt (x)))
 #define ACKLEN 4
 #define MSGLEN 12
-#define TEMPINDEX 3
+#define TEMPINDEX 3		// index location of temperature within stored data (before trim)
 #define TEMPDATASIZE 10
+#define PACKETNUM 4 	// index location of packet enumeration within stored data (Offset needed to account for trim)
+#define RSSI_OFFSET 74 // RSSI offset taken from datasheet
 
 
 #include "include.h"
@@ -38,6 +40,8 @@ volatile char sendACK;				// Flag to determine when to send ACK
 char txBuffer[MSGLEN];
 char ackBuffer[ACKLEN] = {ACKLEN-1, 0x01, 0xFF, 0x00}; // acknowledgement message - Do not change
 char rxBuffer[MSGLEN];
+char RSSI_latest;
+signed char RSSI_dbm;
 
 
 void main (void)
@@ -87,7 +91,7 @@ void main (void)
 	// ------
 	txBuffer[2] = TI_CC_LED1;				// data to toggle LED1.
 	txBuffer[3] = 0x00;					// temperature data
-	txBuffer[4] = 0x33;
+	txBuffer[4] = 0x00;					// packet number
 	txBuffer[5] = 0x34;
 	txBuffer[6] = 0x35;
 	txBuffer[7] = 0x36;
@@ -110,13 +114,22 @@ void main (void)
   			RFSendPacket(txBuffer, MSGLEN);
   			__delay_cycles(5000);
   			uart_printf("Temperature Sent: %i\r\n", txBuffer[TEMPINDEX]);
+  			uart_printf("Packet #%i Sent.\r\n", txBuffer[PACKETNUM]);
+  			txBuffer[PACKETNUM]++; // increment packet number
   			__delay_cycles(5000);
   			buttonPressed = 0; //
 			sendDataFlag = 0; 					// clear associated flags
 			__bis_SR_register(LPM3_bits + GIE); // re-enter LPM3 + interrupts
   		  }
   		  else if (sendACK) {
+  			TI_CC_SPIReadBurstReg(TI_CC110_RSSI_STATUS, &RSSI_latest, sizeof(char)); // grab newest RSSI data
 
+  			// RSSI is read as an offset 2s compliment.
+  			// The line below normalizes\ to an absolute level in dBm
+			RSSI_dbm = (RSSI_latest >> 1) - RSSI_OFFSET;//(RSSI_latest < 128) ? ((RSSI_latest/2) - RSSI_OFFSET) : ((RSSI_latest-256)/2 - RSSI_OFFSET);
+  			uart_printf("Received Temperature: %i\r\n", rxBuffer[2]);// An example of what we want to show on serial
+			uart_printf("Packet #%i Received. ", rxBuffer[PACKETNUM-1]);
+			uart_printf("RSSI: -%i\r\n", RSSI_dbm);
   			__delay_cycles(5000);					// force a slight delay between receive and ack
   			  RFSendPacket(ackBuffer, ACKLEN);
   			  sendACK = 0;
@@ -144,7 +157,7 @@ __interrupt void PORT1_ISR()
   {
 	_BIC_SR(LPM3_EXIT); 				// exit low power mode
     buttonPressed = 1; 					// set flag for processing later on
-    __delay_cycles(50000);				// Switch debounce
+    __delay_cycles(100000);				// Switch debounce
     TI_CC_SW_PxIFG &= ~(TI_CC_SW1);		// Clr flag that caused int and exit
   }
 
@@ -168,7 +181,7 @@ __interrupt void PORT2_ISR()
         	TI_CC_LED_PxOUT ^= rxBuffer[1];         // Toggle LEDs according to pkt data (if it is actually data)
         	// Send ACK
 			sendACK = 1;
-			uart_printf("Received Temperature: %i\r\n", rxBuffer[2]);// An example of what we want to show on serial
+
         }
         // ARQ would go here.
      }
