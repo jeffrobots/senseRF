@@ -45,7 +45,7 @@
 #include "include.h"
 #include "TI_CC_CC1100-CC2500.h"
 
-#define TI_CC_RF_FREQ  868                 // 315, 433, 868, 915, 2400
+#define TI_CC_RF_FREQ  915                 // 315, 433, 868, 915, 2400
 
 
 
@@ -337,10 +337,10 @@ void writeRFSettings(void)
     TI_CC_SPIWriteReg(TI_CCxxx0_MDMCFG1,  0x22); // Modem configuration.
     TI_CC_SPIWriteReg(TI_CCxxx0_MDMCFG0,  0xF8); // Modem configuration.
     TI_CC_SPIWriteReg(TI_CCxxx0_DEVIATN,  0x00); // Modem dev (when FSK mod en)
-    TI_CC_SPIWriteReg(TI_CCxxx0_MCSM1 ,   0x3F); //MainRadio Cntrl State Machine
-    TI_CC_SPIWriteReg(TI_CCxxx0_MCSM0 ,   0x18); //MainRadio Cntrl State Machine
+    TI_CC_SPIWriteReg(TI_CCxxx0_MCSM1 ,   0x3F); // MainRadio Cntrl State Machine
+    TI_CC_SPIWriteReg(TI_CCxxx0_MCSM0 ,   0x18); // MainRadio Cntrl State Machine
     TI_CC_SPIWriteReg(TI_CCxxx0_FOCCFG,   0x1D); // Freq Offset Compens. Config
-    TI_CC_SPIWriteReg(TI_CCxxx0_BSCFG,    0x1C); //  Bit synchronization config.
+    TI_CC_SPIWriteReg(TI_CCxxx0_BSCFG,    0x1C); // Bit synchronization config.
     TI_CC_SPIWriteReg(TI_CCxxx0_AGCCTRL2, 0xC7); // AGC control.
     TI_CC_SPIWriteReg(TI_CCxxx0_AGCCTRL1, 0x00); // AGC control.
     TI_CC_SPIWriteReg(TI_CCxxx0_AGCCTRL0, 0xB2); // AGC control.
@@ -357,7 +357,7 @@ void writeRFSettings(void)
 }
 
 // PATABLE (0 dBm output power)
-extern char paTable[] = {0x50};
+extern char paTable[] = {0xD3};
 extern char paTableLen = 1;
 
 #endif
