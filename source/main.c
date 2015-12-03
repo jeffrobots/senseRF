@@ -39,7 +39,7 @@
 #define ACKLEN 4
 #define MSGLEN 12
 #define TEMPINDEX 3		// index location of temperature within stored data (before trim)
-#define TEMPDATASIZE 10
+#define TEMPDATASIZE 10 // Allowed size of temperature buffer
 #define PACKETNUM 4 	// index location of packet enumeration within stored data (Offset needed to account for trim)
 #define RSSI_OFFSET 74 // RSSI offset taken from datasheet
 
@@ -78,7 +78,7 @@ void main (void)
 	TI_CC_SPIWriteBurstReg(TI_CCxxx0_PATABLE, paTable, paTableLen);//Write PATABLE -- See CC110L datasheet for more on these
 
 	// Configure ports -- switch inputs, LEDs, GDO0 to RX packet info from CC110L
-	TI_CC_SW_PxREN |= TI_CC_SW1;           	// Enable Pull up resistor (active high)
+	TI_CC_SW_PxREN |= TI_CC_SW1;           	// Enable Pull up resistor (active low on switch)
 	TI_CC_SW_PxOUT |= TI_CC_SW1;         	// Set to pullup (can change to active low by leaving it 0)
 	TI_CC_SW_PxIES |= TI_CC_SW1;        	// Int on falling edge
 	TI_CC_SW_PxIFG &= ~(TI_CC_SW1);         // Clr flags
